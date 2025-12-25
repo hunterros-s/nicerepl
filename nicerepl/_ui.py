@@ -63,14 +63,12 @@ class CancelScope:
         """Request cancellation of this scope.
 
         This is idempotent - multiple calls have the same effect as one.
+        Cancellation is cooperative - code must check via checkpoint(), sleep(),
+        iter(), aiter(), or check_cancelled().
         """
-        # Only cancel task once to avoid multiple pending cancellations
         if not self._cancel_event.is_set():
             self._cancel_event.set()
             self._cancel_time = time.monotonic()
-            # Also cancel task for non-cooperative code
-            if self._task:
-                self._task.cancel()
 
     @property
     def cancelled(self) -> bool:
@@ -386,10 +384,6 @@ class _CancelableContext:
         self._ui._state = None
         self._ui._out.clear_live_footer()
         self._ui._out.clear_live()
-        # Always clear pending cancellation from scope.cancel() calling task.cancel()
-        # This handles both: exception propagated here OR caught inside the context
-        if self._scope._task and self._scope.cancelled and sys.version_info >= (3, 11):
-            self._scope._task.uncancel()
         if exc_type is asyncio.CancelledError:
             self._ui.error("Interrupted")
             return True  # Suppress, don't propagate
