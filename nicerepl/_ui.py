@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import asyncio
 import functools
-import sys
 import time
 from collections.abc import AsyncIterable, AsyncIterator, Iterable, Iterator
 from contextvars import ContextVar, Token
